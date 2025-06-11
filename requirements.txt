@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+opencv-python
+opencv-contrib-python
+numpy
+websockets
+python-multipart
+face_recognition
+uvicorn[standard]
+mediapipe
+pytesseract

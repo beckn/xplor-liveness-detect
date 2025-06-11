@@ -1,0 +1,9 @@
+services:
+  fastapi-app:
+    build: .
+    container_name: fastapi-websocket
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    restart: unless-stopped

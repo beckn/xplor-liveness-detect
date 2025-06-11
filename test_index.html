@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition WebSocket</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+        video, canvas { border: 2px solid black; margin: 10px; }
+        #log { width: 80%; height: 200px; border: 1px solid #ccc; overflow-y: auto; margin: 20px auto; padding: 10px; text-align: left; background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <h2>Face Recognition WebSocket</h2>
+    <label for="faceIdInput">Face ID:</label>
+    <input type="text" id="faceIdInput" placeholder="Enter your Face ID">
+    <br><br>
+    <video id="video" width="320" height="240" autoplay></video>
+    <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
+    <button onclick="startWebSocket()">Start WebSocket</button>
+    <button onclick="stopWebSocket()">Stop WebSocket</button>
+    <h3>Logs:</h3>
+    <div id="log"></div>
+
+    <script>
+        let ws;
+        let video = document.getElementById("video");
+        let canvas = document.getElementById("canvas");
+        let ctx = canvas.getContext("2d");
+        let streaming = false;
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => { video.srcObject = stream; video.play(); })
+            .catch(err => logMessage("❌ Error accessing webcam: " + err));
+
+        function startWebSocket() {
+            let faceId = document.getElementById("faceIdInput").value.trim();
+            if (!faceId) {
+                logMessage("⚠️ Please enter a Face ID before starting WebSocket.");
+                return;
+            }
+
+            ws = new WebSocket("ws://localhost:8000/api/stream");
+
+            ws.onopen = () => {
+                logMessage("✅ WebSocket connected!");
+                ws.send(JSON.stringify({ face_id: faceId }));  // Send face_id first
+                streaming = true;
+                sendFrames();
+            };
+
+            ws.onmessage = (event) => {
+                logMessage("📩 Server Response: " + event.data);
+            };
+
+            ws.onerror = (error) => {
+                logMessage("⚠️ WebSocket Error: " + error);
+            };
+
+            ws.onclose = () => {
+                logMessage("❌ WebSocket closed!");
+                streaming = false;
+            };
+        }
+
+        function stopWebSocket() {
+            if (ws) { ws.close(); streaming = false; }
+        }
+
+        function sendFrames() {
+            if (!streaming) return;
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            let imageData = canvas.toDataURL("image/jpeg");
+
+            ws.send(JSON.stringify({ image: imageData }));
+
+            setTimeout(sendFrames, 500);
+        }
+
+        function logMessage(msg) {
+            let logDiv = document.getElementById("log");
+            logDiv.innerHTML += msg + "<br>";
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>

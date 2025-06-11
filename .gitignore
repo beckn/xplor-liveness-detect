@@ -1,0 +1,5 @@
+uploads
+.venv
+__pycache__
+.mypy_cache
+face_data
